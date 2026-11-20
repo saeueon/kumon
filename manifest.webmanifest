@@ -1,0 +1,14 @@
+{
+  "name": "구몬학습 프로토타입",
+  "short_name": "구몬학습",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#F5F5F5",
+  "theme_color": "#F5F5F5",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
