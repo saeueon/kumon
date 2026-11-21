@@ -60,6 +60,10 @@
         <div id="tvBig" class="tv"><video src="media/teacher.mp4" poster="media/teacher.jpg" muted loop playsinline webkit-playsinline preload="auto" disablepictureinpicture></video><span class="tv-name"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4"/></svg>김구몬 선생님</span></div>
         <div id="tvSmall" class="tv"><video src="media/teacher.mp4" poster="media/teacher.jpg" muted loop playsinline webkit-playsinline preload="auto" disablepictureinpicture></video></div>
         <img id="tile" src="img/p/tile_on_on.png" alt="내 화면" draggable="false">
+        <div id="myCam" hidden>
+          <video id="myCamVideo" muted playsinline webkit-playsinline autoplay disablepictureinpicture></video>
+          <span class="tv-name"><svg id="myMic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4"/><path class="slash" d="M3 3l18 18"/></svg>박명지</span>
+        </div>
         <div id="tabHits">
           <button class="hit tab" data-tab="video" aria-label="비디오"></button>
           <button class="hit tab" data-tab="chat" aria-label="채팅"></button>
@@ -106,6 +110,20 @@
 
     <div id="toast" role="status"></div>
   </div>
+</div>
+
+<div id="home" hidden>
+  <div class="hs-status">
+    <span class="hs-time" id="hsTime"></span>
+    <span class="hs-right">
+      <svg class="hs-wifi" viewBox="0 0 18 13" aria-hidden="true"><path fill="#fff" d="M9 2.6c2.6 0 5 1 6.8 2.7l1.3-1.3C14.9 1.9 12 .7 9 .7S3.1 1.9.9 4l1.3 1.3C4 3.6 6.4 2.6 9 2.6Zm0 3.6c1.6 0 3.1.6 4.3 1.6l1.3-1.3C13.1 5.1 11.1 4.3 9 4.3s-4.1.8-5.6 2.2l1.3 1.3C5.9 6.8 7.4 6.2 9 6.2Zm0 3.6c.6 0 1.2.2 1.7.6L9 12.1l-1.7-1.7c.5-.4 1.1-.6 1.7-.6Z"/></svg>
+      <span>100%</span>
+      <svg class="hs-batt" viewBox="0 0 28 13" aria-hidden="true"><rect x=".5" y=".5" width="24" height="12" rx="3.6" fill="none" stroke="#fff" stroke-opacity=".45"/><rect x="2" y="2" width="21" height="9" rx="2.2" fill="#fff"/><path d="M26 4.3v4.4c.9-.3 1.5-1.2 1.5-2.2s-.6-1.9-1.5-2.2Z" fill="#fff" fill-opacity=".45"/></svg>
+    </span>
+  </div>
+  <div class="hs-grid" id="hsGrid"></div>
+  <div class="hs-dots"><i class="on"></i><i></i></div>
+  <div class="hs-dock" id="hsDock"></div>
 </div>
 
 <div id="rotate" hidden>
