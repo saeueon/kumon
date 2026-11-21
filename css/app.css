@@ -115,24 +115,35 @@ img { -webkit-user-drag: none; user-select: none; }
 #palette button.on { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--green); }
 
 /* AI 캐릭터 */
-#ai {
-  position: absolute; left: 84px; top: 64px; display: flex; align-items: center; gap: 4px;
-  padding: 8px 18px 8px 6px; max-width: 380px;
-  background: #fff; border: 1px solid var(--gray-200); border-radius: 20px;
-  box-shadow: 0 0 20px rgba(0,0,0,.08);
-  transform-origin: 0 50%; animation: aiIn .22s cubic-bezier(.2,.8,.2,1.2);
-}
+#ai { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; z-index: 2; }
 #ai[hidden] { display: none; }
-@keyframes aiIn { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: none; } }
-#aiImg { position: relative; flex: none; width: 104px; height: 104px; overflow: hidden; cursor: pointer; border-radius: 14px; }
-#aiImg video { position: absolute; display: block; mix-blend-mode: multiply; pointer-events: none; background: #fff; }
-#aiImg .v-on { left: -8px; top: -10px; width: 120px; height: 120px; }
-#aiImg .v-listen { left: 0; top: 0; width: 104px; height: 104px; opacity: 0; }
+/* 캐릭터: 화이트보드 우하단에서 튀어나오듯 등장 */
+#aiImg {
+  position: absolute; left: 676px; top: 520px; width: 180px; height: 180px;
+  cursor: pointer; pointer-events: auto; transform-origin: 100% 100%;
+  animation: aiPop .6s cubic-bezier(.2,.9,.25,1.25) both;
+}
+#aiImg video { position: absolute; inset: 0; width: 180px; height: 180px; display: block; mix-blend-mode: multiply; pointer-events: none; background: #fff; transition: opacity .15s; filter: brightness(1.05) contrast(1.08); }
+#aiImg .v-listen { opacity: 0; }
 #ai.listen .v-listen { opacity: 1; }
 #ai.listen .v-on { opacity: 0; }
-@keyframes hop { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-@keyframes wiggle { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
-#aiBubble { width: 230px; font-size: 15px; font-weight: 600; line-height: 1.45; color: var(--text); word-break: keep-all; letter-spacing: -0.02em; }
+@keyframes aiPop {
+  0% { opacity: 0; transform: translate(120px, 140px) scale(.4) rotate(12deg); }
+  60% { opacity: 1; transform: translate(-6px, -8px) scale(1.04) rotate(-2deg); }
+  100% { opacity: 1; transform: none; }
+}
+#ai.leaving #aiImg { animation: aiOut .32s ease-in both; }
+#ai.leaving #aiBubble { opacity: 0; transition: opacity .15s; }
+@keyframes aiOut { to { opacity: 0; transform: translate(120px, 140px) scale(.4) rotate(12deg); } }
+#aiBubble {
+  position: absolute; left: 470px; top: 492px;
+  width: 240px; padding: 14px 16px; pointer-events: auto;
+  background: #fff; border: 1px solid var(--gray-200); border-radius: 16px 16px 4px 16px;
+  box-shadow: 0 0 20px rgba(0,0,0,.08);
+  font-size: 15px; font-weight: 600; line-height: 1.45; color: var(--text); word-break: keep-all; letter-spacing: -0.02em;
+  animation: aiBub .3s .35s cubic-bezier(.2,.8,.2,1.2) both; transform-origin: 100% 100%;
+}
+@keyframes aiBub { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
 #aiBubble small { display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600; color: var(--green); }
 .dots i { display: inline-block; width: 6px; height: 6px; margin-left: 4px; border-radius: 50%; background: var(--green); animation: dot 1s infinite; }
 .dots i:nth-child(2) { animation-delay: .15s; } .dots i:nth-child(3) { animation-delay: .3s; }
@@ -323,3 +334,28 @@ img { -webkit-user-drag: none; user-select: none; }
 #myMic .slash { display: none; }
 #myMic.off { stroke: #fff; }
 #myMic.off .slash { display: block; }
+
+/* 색상 도구 아이콘: 고른 색 표시 */
+#toolSwatch { position: absolute; left: 41px; top: 562px; width: 20px; height: 20px; border-radius: 5px; pointer-events: none; background: var(--green); }
+#toolSwatch.sel { box-shadow: 0 0 0 2px #fff; }
+#pdoc.fold #toolSwatch { display: none; }
+
+/* 내 정보 수정 */
+.pf-avatar { position: absolute; left: 354px; top: 140px; width: 120px; height: 120px; pointer-events: none; }
+.pf-opt { position: absolute; width: 78.5px; height: 64px; pointer-events: none; }
+.pf-field { position: absolute; height: 44px; display: block; }
+.pf-input {
+  position: absolute; inset: 0; width: 100%; height: 44px; margin: 0; padding: 0 14px;
+  border: 1px solid #EBEBEB; border-radius: 10px; background: #fff; color: #171717;
+  font: 400 15px/18px "Pretendard", sans-serif; letter-spacing: 0; outline: none;
+  -webkit-appearance: none; appearance: none; -webkit-user-select: text; user-select: text;
+  transition: border-color .12s, box-shadow .12s;
+}
+.pf-field.is-select .pf-input {
+  padding-right: 36px; cursor: pointer;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M4 6.5l4 4 4-4' fill='none' stroke='%23808080' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 15px center / 16px 16px;
+}
+@media (hover: hover) { .pf-field:not(.focus):not(.error) .pf-input:hover { border-color: #D6D6D6; } }
+.pf-field.focus .pf-input { border-color: #59CC03; box-shadow: 0 0 0 3px #F6FEEB; }
+.pf-field.error .pf-input { border-color: #EF4444; box-shadow: 0 0 0 3px #FEF2F2; }
+.pf-msg { position: absolute; right: 0; top: -19px; text-align: right; font-size: 11px; line-height: 13px; color: #EF4444; white-space: nowrap; pointer-events: none; }
