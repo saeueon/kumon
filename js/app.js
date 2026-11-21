@@ -72,7 +72,7 @@
     profile:  { img: 'img/profile.png', hot: [...lnb('my').map(h => ({ ...h, modal: 'leave', go: undefined, then: h.go })),
                 { x: 264, y: 38, w: 40, h: 40, r: 12, modal: 'leave' },
                 { x: 889, y: 656, w: 70, h: 44, r: 12, modal: 'leave' },
-                { x: 969, y: 656, w: 96, h: 44, r: 12, go: 'my', toast: '내 정보를 저장했어요', dark: true }],
+                { x: 969, y: 656, w: 96, h: 44, r: 12, save: true, dark: true }],
                 options: true },
   };
 
@@ -93,6 +93,11 @@
       b.className = 'hit' + (h.dark ? ' dark' : '') + (h.nofb ? ' nofb' : '');
       Object.assign(b.style, { left: h.x + 'px', top: h.y + 'px', width: h.w + 'px', height: h.h + 'px', borderRadius: (h.r ?? 10) + 'px' });
       b.addEventListener('click', () => {
+        if (h.save) {
+          if (document.activeElement) document.activeElement.blur();
+          if (!sec._validate()) { toast('빨간색으로 표시된 칸을 확인해 주세요'); return; }
+          sec._save(); toast('내 정보를 저장했어요'); go('my'); return;
+        }
         if (h.toast) toast(h.toast);
         if (h.modal) { pendingNav = h.then || null; openModal(h.modal); return; }
         if (h.go) go(h.go);
@@ -124,18 +129,81 @@
     return sec;
   }
 
-  // 내 정보 수정: 프로필 캐릭터 6개
+  // 내 정보 수정: 캐릭터를 고르면 큰 프로필 이미지가 바뀌고, 입력칸은 상태별(기본·포커스·오류) 디자인
+  const PROFILE_FIELDS = [
+    { k: 'name', x: 608, y: 167, w: 221, v: '박명지', check: v => v.trim() ? '' : '이름을 입력해 주세요' },
+    { k: 'grade', x: 845, y: 167, w: 221, v: '초등 2학년', select: ['초등 1학년', '초등 2학년', '초등 3학년', '초등 4학년', '초등 5학년', '초등 6학년'] },
+    { k: 'birth', x: 608, y: 247, w: 221, v: '2019.03.14', mode: 'numeric', check: v => /^\d{4}\.\d{2}\.\d{2}$/.test(v.trim()) ? '' : '생년월일을 2019.03.14처럼 입력해 주세요' },
+    { k: 'guardian', x: 608, y: 366, w: 221, v: '김지은', check: v => v.trim() ? '' : '보호자 이름을 입력해 주세요' },
+    { k: 'phone', x: 845, y: 366, w: 221, v: '010-2345-6789', mode: 'tel', check: v => v.replace(/\D/g, '').length >= 10 ? '' : '연락처를 끝까지 입력해 주세요' },
+    { k: 'email', x: 608, y: 446, w: 457, v: 'myungji.mom@example.com', mode: 'email', check: v => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.trim()) ? '' : '이메일 주소를 확인해 주세요' },
+    { k: 'addr', x: 608, y: 526, w: 257, v: '서울시 서대문구 거북골로 34', check: v => v.trim() ? '' : '배송지를 입력해 주세요' },
+    { k: 'addr2', x: 881, y: 526, w: 184, v: '101동 1203호' },
+  ];
+  let profileState = null;
   function buildCharOptions(sec) {
-    const cols = [288, 375, 462], rows = [309, 380];
+    const av = document.createElement('img');
+    av.className = 'pf-avatar'; av.alt = '프로필 캐릭터'; av.draggable = false;
+    sec.appendChild(av);
+    const cols = [288, 375, 461], rows = [308, 380];
+    const opts = [];
     let k = 0;
     rows.forEach(y => cols.forEach(x => {
-      const i = k++;
+      const lv = ++k;
+      const im = document.createElement('img');
+      im.className = 'pf-opt'; im.alt = ''; im.draggable = false;
+      Object.assign(im.style, { left: x + 'px', top: y + 'px' });
+      sec.appendChild(im);
       const b = document.createElement('button');
-      b.className = 'hit'; b.setAttribute('aria-label', '프로필 캐릭터 ' + (i + 1));
-      Object.assign(b.style, { left: x + 'px', top: y + 'px', width: '78px', height: '63px', borderRadius: '14px' });
-      b.addEventListener('click', () => toast(i === 5 ? '지금 프로필 캐릭터예요' : `Lv.${i + 1} 캐릭터예요`));
+      b.className = 'hit'; b.setAttribute('aria-label', `프로필 캐릭터 Lv.${lv}`);
+      Object.assign(b.style, { left: x + 'px', top: y + 'px', width: '79px', height: '64px', borderRadius: '14px' });
+      b.addEventListener('click', () => setChar(lv));
       sec.appendChild(b);
+      opts.push(im);
     }));
+    function setChar(lv) {
+      sec.dataset.lv = lv;
+      av.src = `img/prof/av${lv}.png`;
+      opts.forEach((im, i) => { im.src = `img/prof/opt${i + 1}_${i + 1 === lv ? 'on' : 'off'}.png`; });
+    }
+    // 입력칸
+    const inputs = PROFILE_FIELDS.map(f => {
+      const wrap = document.createElement('label');
+      wrap.className = 'pf-field';
+      Object.assign(wrap.style, { left: f.x + 'px', top: (f.y + 22) + 'px', width: f.w + 'px' });
+      let el;
+      if (f.select) {
+        el = document.createElement('select');
+        el.innerHTML = f.select.map(o => `<option>${o}</option>`).join('');
+        wrap.classList.add('is-select');
+      } else {
+        el = document.createElement('input');
+        el.type = f.mode === 'email' ? 'email' : (f.mode === 'tel' ? 'tel' : 'text');
+        if (f.mode === 'numeric') el.inputMode = 'numeric';
+        el.autocomplete = 'off'; el.spellcheck = false; el.setAttribute('autocapitalize', 'off');
+      }
+      el.className = 'pf-input'; el.setAttribute('aria-label', f.k);
+      const msg = document.createElement('span'); msg.className = 'pf-msg';
+      wrap.append(el, msg);
+      sec.appendChild(wrap);
+      const validate = () => {
+        const m = f.check ? f.check(el.value) : '';
+        wrap.classList.toggle('error', !!m); msg.textContent = m; return !m;
+      };
+      el.addEventListener('focus', () => wrap.classList.add('focus'));
+      el.addEventListener('blur', () => { wrap.classList.remove('focus'); validate(); setTimeout(() => { window.scrollTo(0, 0); }, 50); });
+      el.addEventListener('input', () => { if (wrap.classList.contains('error')) validate(); bump(); });
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') el.blur(); });
+      return { f, el, wrap, validate };
+    });
+    sec._validate = () => inputs.map(i => i.validate()).every(Boolean);
+    sec._reset = () => {
+      const st = profileState || { lv: 6, values: {} };
+      setChar(st.lv);
+      inputs.forEach(i => { i.el.value = st.values[i.f.k] ?? i.f.v; i.wrap.classList.remove('error', 'focus'); i.wrap.querySelector('.pf-msg').textContent = ''; });
+    };
+    sec._save = () => { profileState = { lv: +sec.dataset.lv, values: Object.fromEntries(inputs.map(i => [i.f.k, i.el.value])) }; };
+    sec._reset();
   }
 
   /* ---------- 3. 화면 전환 ---------- */
@@ -143,11 +211,7 @@
   const play = v => { if (!v) return; try { v.muted = true; v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {} };
   const pauseAll = root => $$('video', root).forEach(v => { try { v.pause(); } catch (e) {} });
   /* ---------- iPad 홈 화면 (화면 크기에 맞춰 배치) ---------- */
-  const HOME_ROWS = [
-    [['facetime', 'FaceTime'], ['files', 'Files'], ['reminders', 'Reminders'], ['maps', 'Maps'], ['home', 'Home'], ['camera', 'Camera']],
-    [['appstore', 'App Store'], ['books', 'Books'], ['games', 'Games'], ['tv', 'TV'], ['news', 'News'], ['settings', 'Settings']],
-    [['clock', 'Clock'], ['weather', 'Weather'], ['stocks', 'Stocks'], ['contacts', 'Contacts'], ['phone', 'Phone'], ['kumon', '구몬학습']],
-  ];
+  const HOME_ROWS = [[['kumon', '구몬학습']]];
   const homeEl = $('#home'), hsGrid = $('#hsGrid'), hsDock = $('#hsDock');
   HOME_ROWS.forEach((row, r) => row.forEach(([id, label], c) => {
     const b = document.createElement('button');
@@ -156,21 +220,14 @@
     b.addEventListener('click', () => { if (id === 'kumon') go('splash'); });
     hsGrid.appendChild(b);
   }));
-  hsDock.innerHTML = ['messages', 'safari', 'music', 'mail', 'calendar', 'photos', 'notes'].map(n => `<img src="img/home/${n}.png" alt="" draggable="false">`).join('') + '<i class="sep"></i><img src="img/home/folder.png" alt="" draggable="false">';
+  hsDock.innerHTML = ['messages', 'safari', 'music', 'calendar'].map(n => `<img src="img/home/${n}.png" alt="" draggable="false">`).join('');
   function layoutHome() {
     const vw = window.innerWidth, vh = window.innerHeight;
     const k = Math.max(0.7, Math.min(1.8, Math.min(vw / W, vh / H)));
     homeEl.style.setProperty('--k', k);
-    // 아이콘 6열: Figma와 같이 가운데 정렬, 열 간격은 화면 너비에 비례
-    const gridW = Math.min(vw - 120 * k, 740 * (vw / W));
-    const colGap = gridW / 5;
-    const x0 = (vw - gridW) / 2;
-    const top = Math.max(84 * k, vh * 0.113);
-    const rowGap = Math.min(121 * k * Math.max(1, (vh / H) / k * 0.95), (vh - top - 200 * k) / 3);
-    $$('.hs-app', hsGrid).forEach(b => {
-      b.style.left = (x0 + colGap * +b.dataset.c) + 'px';
-      b.style.top = (top + rowGap * +b.dataset.r) + 'px';
-    });
+    // 구몬학습 아이콘 1개: 가로 가운데, Figma와 같은 높이 비율
+    const top = Math.max(84 * k, vh * (84 / H));
+    $$('.hs-app', hsGrid).forEach(b => { b.style.left = (vw / 2) + 'px'; b.style.top = top + 'px'; });
     $('.hs-dock', homeEl).style.bottom = `max(${28 * k}px, env(safe-area-inset-bottom))`;
     $('.hs-dots', homeEl).style.bottom = (153 * k + 4) + 'px';
   }
@@ -196,6 +253,7 @@
       const sec = built[name] || buildScreen(name);
       sec.hidden = false;
       const def = SCREENS[name];
+      if (name === 'profile' && sec._reset && current !== 'profile') sec._reset();
       play($('.char-video', sec));
       if (def.bar) {
         const bar = $('.bar', sec);
@@ -295,6 +353,7 @@
     pdoc.classList.toggle('fold', S.fold);
     $('#pdocImg').src = `img/p/pdoc_${S.fold ? 'on' : 'off'}_${S.ai === 'off' ? 'off' : 'on'}.png`;
     $('#toolsImg').src = `img/p/tool_${S.tool}.png`;
+    const sw = $('#toolSwatch'); sw.style.background = S.color; sw.classList.toggle('sel', S.tool === 'color');
     $('#ink').classList.toggle('cursor', S.tool === 'cursor' || S.tool === 'color');
     if (S.fold) $('#palette').hidden = true;
   }
@@ -380,10 +439,14 @@
     '“충동적”은 갑자기 하고 싶어지는 마음이야. 천천히 생각해 보자!',
   ];
   let aiIdx = 0, aiTimer = null;
+  let aiLeave = null;
   function setAI(state) {
     S.ai = state; clearTimeout(aiTimer);
     const box = $('#ai'), bub = $('#aiBubble');
-    box.hidden = state === 'off';
+    clearTimeout(aiLeave);
+    if (state === 'off') {
+      if (!box.hidden) { box.classList.add('leaving'); aiLeave = setTimeout(() => { box.hidden = true; box.classList.remove('leaving'); }, 320); }
+    } else { box.classList.remove('leaving'); box.hidden = false; }
     box.classList.toggle('listen', state === 'listen');
     const vOn = $('#aiOn'), vL = $('#aiListen');
     if (state === 'off') { vOn.pause(); vL.pause(); }
