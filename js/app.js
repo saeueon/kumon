@@ -19,6 +19,7 @@
     stage.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
     $('#rotate').hidden = !(vh > vw * 1.05 && Math.min(vw, vh) < 1100);
     resizeInk();
+    layoutHome();
   }
   window.addEventListener('resize', fit);
   window.addEventListener('orientationchange', () => setTimeout(fit, 250));
@@ -33,6 +34,9 @@
   const lnb = cur => Object.entries(LNB).filter(([k]) => k !== cur)
     .map(([k, y]) => ({ x: 16, y, w: 191, h: 52, r: 12, go: k }));
   const profileCard = { x: 20, y: 666, w: 176, h: 56, r: 12, go: 'my' };
+
+  const abs = p => new URL(p, location.href).href;
+  const HOVER = {"main": {"hover": [1, 1, 1, 0, 1, 0, 1, 0], "pressed": [1, 1, 1, 0, 1, 0, 1, 0]}, "schedule": {"hover": [1, 1, 1, 0, 1, 1, 1, 1], "pressed": [1, 1, 1, 0, 1, 1, 1, 1]}, "schedule_w1": {"hover": [1, 1, 1, 0, 1, 1, 1], "pressed": [1, 1, 1, 0, 1, 1, 1]}, "schedule_w3": {"hover": [1, 1, 1, 0, 1, 1, 1], "pressed": [1, 1, 1, 0, 1, 1, 1]}, "books": {"hover": [1, 1, 1, 0, 1], "pressed": [1, 1, 1, 0, 1]}, "my": {"hover": [1, 1, 1, 0, 0, 0, 0, 1], "pressed": [1, 1, 1, 0, 0, 0, 0, 1]}, "profile": {"hover": [1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1], "pressed": [1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1]}};
 
   const SCREENS = {
     app:      { img: 'img/app.jpg', hot: [{ x: 899, y: 322, w: 76, h: 104, r: 18, go: 'splash', nofb: true }] },
@@ -106,6 +110,15 @@
       sec.appendChild(t);
     }
     if (def.options) buildCharOptions(sec);
+    const hv = HOVER[name];
+    if (hv) $$(':scope > .hit', sec).forEach((b, i) => {
+      if (!hv.hover[i]) return;
+      b.classList.add('hv');
+      b.style.setProperty('--hov', `url(${abs(`img/h/${name}_hover.jpg`)})`);
+      b.style.setProperty('--prs', `url(${abs(`img/h/${name}_pressed.jpg`)})`);
+      b.style.backgroundSize = '1133px 744px';
+      b.style.backgroundPosition = `${-parseFloat(b.style.left)}px ${-parseFloat(b.style.top)}px`;
+    });
     screensEl.appendChild(sec);
     built[name] = sec;
     return sec;
@@ -129,6 +142,46 @@
   let current = null, barTimer = null;
   const play = v => { if (!v) return; try { v.muted = true; v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {} };
   const pauseAll = root => $$('video', root).forEach(v => { try { v.pause(); } catch (e) {} });
+  /* ---------- iPad 홈 화면 (화면 크기에 맞춰 배치) ---------- */
+  const HOME_ROWS = [
+    [['facetime', 'FaceTime'], ['files', 'Files'], ['reminders', 'Reminders'], ['maps', 'Maps'], ['home', 'Home'], ['camera', 'Camera']],
+    [['appstore', 'App Store'], ['books', 'Books'], ['games', 'Games'], ['tv', 'TV'], ['news', 'News'], ['settings', 'Settings']],
+    [['clock', 'Clock'], ['weather', 'Weather'], ['stocks', 'Stocks'], ['contacts', 'Contacts'], ['phone', 'Phone'], ['kumon', '구몬학습']],
+  ];
+  const homeEl = $('#home'), hsGrid = $('#hsGrid'), hsDock = $('#hsDock');
+  HOME_ROWS.forEach((row, r) => row.forEach(([id, label], c) => {
+    const b = document.createElement('button');
+    b.className = 'hs-app'; b.dataset.r = r; b.dataset.c = c;
+    b.innerHTML = `<img src="img/home/${id}.png" alt="" draggable="false"><span>${label}</span>`;
+    b.addEventListener('click', () => { if (id === 'kumon') go('splash'); });
+    hsGrid.appendChild(b);
+  }));
+  hsDock.innerHTML = ['messages', 'safari', 'music', 'mail', 'calendar', 'photos', 'notes'].map(n => `<img src="img/home/${n}.png" alt="" draggable="false">`).join('') + '<i class="sep"></i><img src="img/home/folder.png" alt="" draggable="false">';
+  function layoutHome() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const k = Math.max(0.7, Math.min(1.8, Math.min(vw / W, vh / H)));
+    homeEl.style.setProperty('--k', k);
+    // 아이콘 6열: Figma와 같이 가운데 정렬, 열 간격은 화면 너비에 비례
+    const gridW = Math.min(vw - 120 * k, 740 * (vw / W));
+    const colGap = gridW / 5;
+    const x0 = (vw - gridW) / 2;
+    const top = Math.max(84 * k, vh * 0.113);
+    const rowGap = Math.min(121 * k * Math.max(1, (vh / H) / k * 0.95), (vh - top - 200 * k) / 3);
+    $$('.hs-app', hsGrid).forEach(b => {
+      b.style.left = (x0 + colGap * +b.dataset.c) + 'px';
+      b.style.top = (top + rowGap * +b.dataset.r) + 'px';
+    });
+    $('.hs-dock', homeEl).style.bottom = `max(${28 * k}px, env(safe-area-inset-bottom))`;
+    $('.hs-dots', homeEl).style.bottom = (153 * k + 4) + 'px';
+  }
+  function tickHomeClock() {
+    const d = new Date(), h = d.getHours(), m = d.getMinutes();
+    const ap = h < 12 ? '오전' : '오후', h12 = h % 12 || 12;
+    const days = ['일', '월', '화', '수', '목', '금', '토'];
+    $('#hsTime').textContent = `${ap} ${h12}시 ${m}분  ${d.getMonth() + 1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;
+  }
+  tickHomeClock(); setInterval(tickHomeClock, 15000);
+
   function go(name) {
     closeModal();
     pauseAll(document);
@@ -151,6 +204,7 @@
       }
     }
     current = name;
+    homeEl.hidden = name !== 'app';
   }
 
   /* ---------- 4. 모달 · 토스트 ---------- */
@@ -187,6 +241,19 @@
     if (b) b.classList.add('pressed');
     bump();
   });
+  // 화상 수업·모달 버튼: Figma hover/pressed 상태 이미지를 버튼 영역에만 보여 줌
+  const HV = new Map();
+  function regHv(el, fn) { HV.set(el, fn); el.classList.add('hv'); }
+  function applyHv(el) {
+    const fn = HV.get(el); if (!fn) return;
+    const o = fn(); if (!o) return;
+    el.style.setProperty('--hov', `url(${abs(o.hov)})`);
+    el.style.setProperty('--prs', `url(${abs(o.prs || o.hov)})`);
+    el.style.backgroundSize = `${o.w}px ${o.h}px`;
+    el.style.backgroundPosition = `${o.x - el.offsetLeft}px ${o.y - el.offsetTop}px`;
+  }
+  stage.addEventListener('pointerover', e => { const b = e.target.closest('.hv'); if (b) applyHv(b); });
+  stage.addEventListener('pointerdown', e => { const b = e.target.closest('.hv'); if (b) applyHv(b); }, true);
   const unpress = () => $$('.hit.pressed', stage).forEach(b => b.classList.remove('pressed'));
   ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => stage.addEventListener(t, unpress));
 
@@ -239,6 +306,10 @@
     $('#pvImg').src = `img/p/${S.fold ? 'pvf' : 'pv'}_${S.tab}.png`;
     const tile = $('#tile');
     tile.hidden = S.fold || S.tab !== 'video';
+    const live = camLive() && S.cam;
+    $('#myCam').hidden = tile.hidden || !live;
+    tile.style.visibility = live ? 'hidden' : '';
+    $('#myMic').classList.toggle('off', !S.mic);
     tile.src = `img/p/tile_${S.cam ? 'on' : 'off'}_${S.mic ? 'on' : 'off'}.png`;
     $('#tabHits').hidden = S.fold;
     $('#noteHits').hidden = S.fold || S.tab !== 'note';
@@ -260,11 +331,13 @@
 
   // 버튼 이미지 (normal / hover / pressed / selected)
   const pressedCtl = new Set();
+  const hoverCtl = new Set();
   function ctlImg(kind, pressed) {
-    if (kind === 'exit') return `img/p/bred_${pressed ? 'hover' : 'normal'}.png`;
-    if (kind === 'hand') return `img/p/bp_${S.hand ? 'selected' : (pressed ? 'hover' : 'normal')}_hand.png`;
-    const type = kind === 'mic' ? (S.mic ? 'mic' : 'mic_off') : (S.cam ? 'cam' : 'cam_off');
-    return `img/p/bp_${pressed ? 'hover' : 'normal'}_${type}.png`;
+    const st = pressed ? 'pressed' : (hoverCtl.has(kind) ? 'hover' : 'normal');
+    if (kind === 'exit') return `img/p/bred_${st}.png`;
+    if (kind === 'hand') return `img/p/bp_${S.hand ? 'selected' : st}_hand.png`;
+    const tp = kind === 'mic' ? (S.mic ? 'mic' : 'mic_off') : (S.cam ? 'cam' : 'cam_off');
+    return `img/p/bp_${st}_${tp}.png`;
   }
   function paintControls() {
     $$('#controls .ctl').forEach(b => { $('img', b).src = ctlImg(b.dataset.ctl, pressedCtl.has(b.dataset.ctl)); });
@@ -272,6 +345,8 @@
   $$('#controls .ctl').forEach(b => {
     const k = b.dataset.ctl;
     b.addEventListener('pointerdown', () => { pressedCtl.add(k); paintControls(); });
+    b.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') { hoverCtl.add(k); paintControls(); } });
+    b.addEventListener('pointerleave', () => { if (hoverCtl.delete(k)) paintControls(); });
     const up = () => { if (pressedCtl.delete(k)) paintControls(); };
     b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up);
     b.addEventListener('click', () => {
@@ -335,7 +410,24 @@
     $('#timer').textContent = String(Math.floor(s / 60) % 100).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
   }
 
+  /* 내 화면: 기기 전면 카메라 (허용 안 하거나 카메라가 없으면 기존 이미지) */
+  let camStream = null, camAsked = false;
+  const camLive = () => !!(camStream && camStream.active);
+  async function startCam() {
+    if (camLive()) { $('#myCamVideo').play().catch(() => {}); renderVideo(); return; }
+    if (camAsked || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+    camAsked = true;
+    try {
+      camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 360 } }, audio: false });
+      const v = $('#myCamVideo'); v.srcObject = camStream; v.muted = true;
+      await v.play().catch(() => {});
+      camStream.getVideoTracks().forEach(t => t.addEventListener('ended', () => { camStream = null; camAsked = false; renderVideo(); }));
+    } catch (e) { camStream = null; setTimeout(() => { camAsked = false; }, 30000); }
+    renderVideo();
+  }
+
   function startClass() {
+    startCam();
     tStart = Date.now(); tick();
     $$('.tv video').forEach(play);
     if (S.ai !== 'off') setAI('on');
@@ -343,6 +435,7 @@
     renderDoc(); renderVideo();
   }
   function stopClass() {
+    try { $('#myCamVideo').pause(); } catch (e) {}
     clearInterval(tInt); tInt = null;
     $('#chatInput').blur();
   }
@@ -547,6 +640,14 @@
   }
   ['keydown', 'touchstart', 'wheel'].forEach(t => document.addEventListener(t, bump, { passive: true }));
 
+  const pdocHv = mode => () => ({ hov: `img/h/pdoc_${S.fold ? 'on' : 'off'}_${S.ai === 'off' ? 'off' : 'on'}_hover.png`, prs: `img/h/pdoc_${S.fold ? 'on' : 'off'}_${S.ai === 'off' ? 'off' : 'on'}_pressed.png`, x: 14, y: 14, w: S.fold ? 74 : 116, h: 716 });
+  ['#btnFold', '#btnAI', '#btnUndo', '#btnRedo'].forEach(s => regHv($(s), pdocHv()));
+  $$('#toolHits .hit').forEach(b => regHv(b, () => ({ hov: `img/h/tg_${S.tool}_hover.png`, x: 24, y: 209, w: 54, h: 390 })));
+  $$('#tabHits .tab').forEach(b => regHv(b, () => ({ hov: `img/h/pv_${S.tab}_hover.png`, prs: `img/h/pv_${S.tab}_pressed.png`, x: 873, y: 14, w: 246, h: 716 })));
+  [['exit', 344, 168], ['leave', 344, 192], ['soon', 400, 332]].forEach(([id, w, h]) => {
+    $$(`#modal-${id} .hit`).forEach(b => regHv(b, () => ({ hov: `img/h/modal_${id}_hover.png`, prs: `img/h/modal_${id}_pressed.png`, x: -10, y: -10, w, h })));
+  });
+
   /* ---------- 10. 시작 ---------- */
   // 모든 이미지를 미리 받아 두어 전환 시 깜빡임 방지
   const PRE = [
@@ -557,6 +658,8 @@
       ...TOOLS.map(t => 'tool_' + t),
       ...['mic', 'mic_off', 'cam', 'cam_off', 'hand'].flatMap(t => ['normal', 'hover'].map(s => `bp_${s}_${t}`))].map(n => `img/p/${n}.png`),
   ];
+  const os_h = ["books_hover.jpg", "books_pressed.jpg", "main_hover.jpg", "main_pressed.jpg", "modal_exit_hover.png", "modal_exit_pressed.png", "modal_leave_hover.png", "modal_leave_pressed.png", "modal_soon_hover.png", "modal_soon_pressed.png", "my_hover.jpg", "my_pressed.jpg", "pdoc_off_off_hover.png", "pdoc_off_off_pressed.png", "pdoc_off_on_hover.png", "pdoc_off_on_pressed.png", "pdoc_on_off_hover.png", "pdoc_on_off_pressed.png", "pdoc_on_on_hover.png", "pdoc_on_on_pressed.png", "profile_hover.jpg", "profile_pressed.jpg", "pv_chat_hover.png", "pv_chat_pressed.png", "pv_note_hover.png", "pv_note_pressed.png", "pv_video_hover.png", "pv_video_pressed.png", "schedule_hover.jpg", "schedule_pressed.jpg", "schedule_w1_hover.jpg", "schedule_w1_pressed.jpg", "schedule_w3_hover.jpg", "schedule_w3_pressed.jpg", "tg_color_hover.png", "tg_cursor_hover.png", "tg_eraser_hover.png", "tg_line_hover.png", "tg_marker_hover.png", "tg_memo_hover.png", "tg_pen_hover.png", "tg_shape_hover.png", "tg_text_hover.png"];
+  os_h.forEach(f => PRE.push('img/h/' + f));
   PRE.forEach(src => { const i = new Image(); i.decoding = 'async'; i.src = src; });
   Object.keys(SCREENS).forEach(buildScreen);
 
