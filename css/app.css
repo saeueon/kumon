@@ -259,3 +259,67 @@ img { -webkit-user-drag: none; user-select: none; }
 
 /* 스플래시·로딩 캐릭터 영상 */
 .char-video { position: absolute; left: 515px; top: 285px; width: 103px; height: 103px; display: block; mix-blend-mode: multiply; pointer-events: none; background: #fff; }
+
+/* hover / pressed: Figma 상태 이미지 */
+.hit.hv { background-repeat: no-repeat; }
+@media (hover: hover) {
+  .hit.hv:hover { background-image: var(--hov); }
+  .hit:not(.hv):not(.nofb):hover { background-color: rgba(10, 10, 10, .04); }
+  .pg:not(:disabled):hover { background: var(--gray-50); }
+  #chatSend:not(:disabled):hover { background: var(--green-600); }
+  .toggle:hover { filter: brightness(.96); }
+}
+.hit.hv.pressed { background-color: transparent; background-image: var(--prs); background-repeat: no-repeat; }
+
+/* ===== iPad 홈 화면 (화면 크기에 맞춰 다시 배치) ===== */
+#home {
+  position: fixed; inset: 0; z-index: 5; overflow: hidden;
+  background: #8a7560 url(../img/home/wallpaper.jpg) center / cover no-repeat;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Pretendard", sans-serif;
+  color: #fff; letter-spacing: 0; --k: 1;
+}
+#home[hidden] { display: none; }
+.hs-status {
+  position: absolute; left: 0; right: 0; top: 0; height: calc(32px * var(--k));
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 max(calc(16px * var(--k)), env(safe-area-inset-right)) 0 max(calc(16px * var(--k)), env(safe-area-inset-left));
+  font-size: calc(14px * var(--k)); font-weight: 600; text-shadow: 0 0 6px rgba(0,0,0,.15);
+}
+.hs-right { display: flex; align-items: center; gap: calc(5px * var(--k)); }
+.hs-wifi { width: calc(17px * var(--k)); height: calc(12px * var(--k)); }
+.hs-batt { width: calc(27px * var(--k)); height: calc(13px * var(--k)); }
+.hs-grid { position: absolute; inset: 0; pointer-events: none; }
+.hs-app {
+  position: absolute; width: calc(68px * var(--k)); pointer-events: auto;
+  display: flex; flex-direction: column; align-items: center; gap: calc(7px * var(--k));
+  border: 0; padding: 0; background: none; color: #fff; font: inherit; cursor: pointer;
+  transform: translateX(-50%); -webkit-tap-highlight-color: transparent;
+}
+.hs-app img { width: calc(68px * var(--k)); height: calc(68px * var(--k)); display: block; transition: transform .12s, filter .12s; filter: drop-shadow(0 calc(2px * var(--k)) calc(6px * var(--k)) rgba(0,0,0,.12)); }
+.hs-app span { font-size: calc(12px * var(--k)); font-weight: 500; line-height: 1.2; white-space: nowrap; text-shadow: 0 0 4px rgba(0,0,0,.25); }
+.hs-app:active img, .hs-app.press img { transform: scale(.92); filter: brightness(.85); }
+@media (hover: hover) { .hs-app:hover img { filter: brightness(1.06) drop-shadow(0 4px 10px rgba(0,0,0,.18)); } }
+.hs-dots { position: absolute; left: 50%; transform: translateX(-50%); display: flex; gap: calc(10px * var(--k)); padding: calc(6px * var(--k)) calc(10px * var(--k)); }
+.hs-dots i { width: calc(7px * var(--k)); height: calc(7px * var(--k)); border-radius: 50%; background: rgba(255,255,255,.45); }
+.hs-dots i.on { background: #fff; }
+.hs-dock {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: calc(19px * var(--k));
+  padding: calc(19px * var(--k)) calc(19px * var(--k));
+  border-radius: calc(36px * var(--k));
+  background: rgba(255,255,255,.22);
+  border: 1px solid rgba(255,255,255,.35);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4); backdrop-filter: blur(24px) saturate(1.4);
+  box-shadow: 0 10px 30px rgba(0,0,0,.12);
+}
+.hs-dock img { width: calc(68px * var(--k)); height: calc(68px * var(--k)); display: block; }
+.hs-dock .sep { width: 1px; height: calc(60px * var(--k)); background: rgba(255,255,255,.4); margin: 0 calc(2px * var(--k)); }
+
+/* 내 화면: 전면 카메라 */
+#myCam { position: absolute; left: 896px; top: 240px; width: 200px; height: 112px; border-radius: 8px; overflow: hidden; background: #EBEBEB; box-shadow: inset 0 0 0 1px #000; pointer-events: none; }
+#myCam[hidden] { display: none; }
+#myCam video { position: absolute; inset: 1px; width: 198px; height: 110px; border-radius: 7px; object-fit: cover; transform: scaleX(-1); }
+#myCam .tv-name { z-index: 1; }
+#myMic .slash { display: none; }
+#myMic.off { stroke: #fff; }
+#myMic.off .slash { display: block; }
